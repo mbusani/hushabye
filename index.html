@@ -1,0 +1,636 @@
+<title>Hushabye</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-screen night app — header, a scrolling panel, a bottom tab bar. Single dark world on purpose: it's used in a dark bedroom. */
+:root {
+  --night: #15121f;      /* aubergine-indigo sky */
+  --dusk: #211c31;       /* raised surfaces */
+  --dusk-2: #2c2541;     /* pressed / borders */
+  --moon: #ece2d2;       /* warm parchment text */
+  --haze: #a296b3;       /* secondary text */
+  --ember: #e39a63;      /* warm amber accent */
+  --ember-ink: #2a1a10;  /* text on ember */
+  --glow: #c2332b;       /* night-light red */
+  --ok: #8fc4a1;
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --nav-h: 64px;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--night);
+  color: var(--moon);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+header { display: flex; align-items: center; gap: 12px; }
+.moon {
+  width: 34px; height: 34px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 65% 35%, var(--night) 0 42%, transparent 43%), var(--moon);
+  box-shadow: 0 0 24px rgba(236, 226, 210, .18);
+}
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 1.75rem; margin: 0; letter-spacing: .01em; }
+.sub { color: var(--haze); font-size: .875rem; margin: 0; }
+h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.3rem; margin: 0; text-wrap: balance; }
+.label { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--haze); font-weight: 600; }
+.panel { display: flex; flex-direction: column; gap: 18px; }
+.panel[hidden] { display: none !important; }
+p { margin: 0; }
+.hint { color: var(--haze); font-size: .875rem; max-width: 60ch; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Sounds */
+.sounds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sound {
+  background: var(--dusk); border: 1px solid var(--dusk-2); border-radius: 14px;
+  padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+}
+.sound strong { font-weight: 600; }
+.sound span { color: var(--haze); font-size: .8125rem; }
+.sound[aria-pressed="true"] { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 14%, var(--dusk)); }
+.big-play {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 16px; border-radius: 999px; border: 0;
+  background: var(--ember); color: var(--ember-ink); font-weight: 600; font-size: 1.05rem;
+}
+.big-play.playing { background: var(--dusk-2); color: var(--moon); }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.slider { display: flex; flex-direction: column; gap: 6px; }
+input[type=range] { width: 100%; accent-color: var(--ember); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: transparent; border: 1px solid var(--dusk-2); border-radius: 999px;
+  padding: 7px 14px; font-size: .875rem; color: var(--moon);
+}
+.chip[aria-pressed="true"] { background: var(--moon); color: var(--night); border-color: var(--moon); }
+.status { font-variant-numeric: tabular-nums; color: var(--ember); font-size: .9rem; min-height: 1.4em; }
+.tip { border-left: 2px solid var(--dusk-2); padding-left: 12px; }
+
+/* Night light */
+.lamp-preview {
+  height: 160px; border-radius: 18px; border: 1px solid var(--dusk-2);
+  background: radial-gradient(circle at 50% 60%, var(--glow), transparent 70%), #0b0709;
+  display: grid; place-items: center; color: var(--moon); font-size: .875rem;
+}
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: #000;
+  display: grid; place-items: center;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.overlay .glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 55%, var(--glow), #3a0b09 60%, #000 100%); }
+.overlay .msg { position: relative; color: #e8b9a8; font-size: .9rem; opacity: 0; transition: opacity .4s; text-align: center; padding: 0 24px; }
+.overlay .msg.show { opacity: .8; }
+
+/* Routine */
+.progress { height: 6px; background: var(--dusk); border-radius: 999px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--ember); width: 0; transition: width .3s; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.step {
+  display: flex; align-items: center; gap: 12px; background: var(--dusk);
+  border-radius: 12px; padding: 12px 12px 12px 14px;
+}
+.step label { flex: 1; display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; }
+.step input { width: 22px; height: 22px; accent-color: var(--ember); flex: none; }
+.step .txt { min-width: 0; overflow-wrap: anywhere; }
+.step .mins { color: var(--haze); font-size: .8125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.step.done .txt { color: var(--haze); text-decoration: line-through; text-decoration-color: var(--dusk-2); }
+.x { background: none; border: 0; color: var(--haze); padding: 4px 6px; font-size: 1.1rem; line-height: 1; }
+.add { display: flex; gap: 8px; }
+.add input {
+  flex: 1; min-width: 0; background: var(--dusk); border: 1px solid var(--dusk-2); border-radius: 12px;
+  padding: 10px 12px; color: var(--moon); font: inherit;
+}
+.ghost { background: var(--dusk-2); border: 0; border-radius: 12px; padding: 10px 14px; font-weight: 500; }
+.done-note { color: var(--ok); font-size: .95rem; }
+
+/* Ask Claude */
+.prompts { display: flex; flex-wrap: wrap; gap: 8px; }
+.thread { display: flex; flex-direction: column; gap: 12px; }
+.bubble { padding: 12px 14px; border-radius: 16px; max-width: 92%; min-width: 0; overflow-wrap: anywhere; }
+.bubble.me { align-self: flex-end; background: var(--dusk-2); border-bottom-right-radius: 4px; }
+.bubble.claude { align-self: flex-start; background: var(--dusk); border-bottom-left-radius: 4px; }
+.bubble.claude ul, .bubble.claude ol { margin: 6px 0; padding-left: 20px; }
+.bubble.claude p + p { margin-top: 8px; }
+.bubble .thinking { color: var(--haze); font-style: italic; }
+.askform { display: flex; gap: 8px; align-items: flex-end; }
+.askform textarea {
+  flex: 1; min-width: 0; resize: none; min-height: 48px; max-height: 140px;
+  background: var(--dusk); border: 1px solid var(--dusk-2); border-radius: 14px;
+  padding: 12px; color: var(--moon); font: inherit;
+}
+.send { background: var(--ember); color: var(--ember-ink); border: 0; border-radius: 14px; padding: 12px 16px; font-weight: 600; }
+.send:disabled { opacity: .5; }
+.helplines { background: var(--dusk); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: .9rem; }
+.helplines .num { font-variant-numeric: tabular-nums; color: var(--moon); font-weight: 600; user-select: all; }
+.unavailable { background: var(--dusk); border-radius: 14px; padding: 14px; color: var(--haze); }
+
+/* Tab bar */
+nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: color-mix(in srgb, var(--night) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--dusk);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+nav .tabs { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h); }
+nav button {
+  background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--haze); font-size: .75rem; font-weight: 500;
+}
+nav button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+nav button[aria-selected="true"] { color: var(--ember); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <div class="moon" aria-hidden="true"></div>
+    <div>
+      <h1>Hushabye</h1>
+      <p class="sub" id="greeting">Bedtime helper for a 16-month-old</p>
+    </div>
+  </header>
+
+  <!-- Sounds -->
+  <section class="panel" id="p-sounds" aria-labelledby="t-sounds">
+    <h2>Sleep sounds</h2>
+    <div class="sounds" role="group" aria-label="Choose a sound">
+      <button class="sound" data-sound="white" aria-pressed="false"><strong>White noise</strong><span>Bright and even, like a fan</span></button>
+      <button class="sound" data-sound="pink" aria-pressed="true"><strong>Pink noise</strong><span>Softer, like steady rain</span></button>
+      <button class="sound" data-sound="brown" aria-pressed="false"><strong>Brown noise</strong><span>Deep, low rumble</span></button>
+      <button class="sound" data-sound="ocean" aria-pressed="false"><strong>Ocean</strong><span>Slow waves in and out</span></button>
+    </div>
+    <button class="big-play" id="play"><span id="play-label">Play pink noise</span></button>
+    <div class="slider">
+      <label class="label" for="vol">Volume</label>
+      <input type="range" id="vol" min="0" max="100" value="45">
+    </div>
+    <div class="slider">
+      <span class="label">Fade out after</span>
+      <div class="chips" role="group" aria-label="Fade out timer">
+        <button class="chip" data-mins="30" aria-pressed="false">30 min</button>
+        <button class="chip" data-mins="60" aria-pressed="false">1 hour</button>
+        <button class="chip" data-mins="120" aria-pressed="false">2 hours</button>
+        <button class="chip" data-mins="0" aria-pressed="true">All night</button>
+      </div>
+    </div>
+    <p class="status" id="sound-status" aria-live="polite"></p>
+    <p class="hint tip">Put the phone at least 2 metres from the cot and keep the volume low, about as loud as a quiet shower. Keep this screen open: the app keeps it awake while sound plays. Use the night light so it stays dim.</p>
+  </section>
+
+  <!-- Night light -->
+  <section class="panel" id="p-light" aria-labelledby="t-light" hidden>
+    <h2>Night light</h2>
+    <p class="hint">A dim red glow for feeds and resettling. Red light is the least likely to wake a toddler fully, and it's easier on tired parents' eyes too.</p>
+    <div class="lamp-preview" id="lamp-preview">Preview</div>
+    <div class="slider">
+      <label class="label" for="bright">Brightness</label>
+      <input type="range" id="bright" min="5" max="100" value="35">
+    </div>
+    <button class="big-play" id="lamp-on">Turn on night light</button>
+    <p class="hint">Tap the screen twice to turn it off. Sounds keep playing while the light is on.</p>
+  </section>
+
+  <!-- Routine -->
+  <section class="panel" id="p-routine" aria-labelledby="t-routine" hidden>
+    <div class="row" style="justify-content: space-between;">
+      <h2>Tonight's routine</h2>
+      <span class="label" id="routine-count">0 of 0</span>
+    </div>
+    <div class="progress" aria-hidden="true"><i id="routine-bar"></i></div>
+    <p class="hint">The same steps in the same order every night help a toddler know sleep is coming. About 30 to 45 minutes all up is plenty.</p>
+    <ul class="steps" id="steps"></ul>
+    <p class="done-note" id="routine-done" hidden>All done. Lights out, and settle with a calm, boring voice.</p>
+    <form class="add" id="add-step">
+      <input id="new-step" placeholder="Add a step, e.g. Say goodnight to the dog" aria-label="New routine step" maxlength="80">
+      <button class="ghost" type="submit">Add</button>
+    </form>
+    <div class="row">
+      <button class="ghost" id="reset-routine" type="button">Start a new night</button>
+    </div>
+  </section>
+
+  <!-- Ask Claude -->
+  <section class="panel" id="p-ask" aria-labelledby="t-ask" hidden>
+    <h2>Ask Claude</h2>
+    <p class="hint">Describe what's happening tonight and get calm, practical ideas. It uses your own Claude account.</p>
+    <div id="ask-ui">
+      <div class="prompts" id="quick">
+        <button class="chip" type="button">Won't settle at bedtime</button>
+        <button class="chip" type="button">Woke at 2am, won't go back down</button>
+        <button class="chip" type="button">Dropping to one nap?</button>
+        <button class="chip" type="button">Could it be teething?</button>
+      </div>
+      <div class="thread" id="thread" aria-live="polite" style="margin-top:16px"></div>
+      <form class="askform" id="askform" style="margin-top:16px">
+        <textarea id="ask-input" rows="2" placeholder="e.g. Took 40 minutes to settle, then woke at 1am crying" aria-label="Your question"></textarea>
+        <button class="send" id="send" type="submit">Ask</button>
+      </form>
+    </div>
+    <div class="unavailable" id="ask-off" hidden>Ask Claude works when Hushabye is opened inside Claude. Everything else here works anywhere.</div>
+    <div class="helplines">
+      <span class="label">Need a person?</span>
+      <p>Ngala Parenting Line (WA), 8am to 8pm daily: <span class="num">(08) 9368 9368</span> or <span class="num">1800 111 546</span></p>
+      <p>healthdirect, any time: <span class="num">1800 022 222</span></p>
+      <p class="hint">For fever, breathing worries, or a toddler who seems unwell, call your GP or healthdirect. In an emergency, call <span class="num">000</span>.</p>
+    </div>
+  </section>
+</div>
+
+<nav aria-label="Sections">
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t-sounds" aria-selected="true" aria-controls="p-sounds" data-tab="sounds">
+      <svg viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 11v2"/></svg>Sounds</button>
+    <button role="tab" id="t-light" aria-selected="false" aria-controls="p-light" data-tab="light">
+      <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Light</button>
+    <button role="tab" id="t-routine" aria-selected="false" aria-controls="p-routine" data-tab="routine">
+      <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Routine</button>
+    <button role="tab" id="t-ask" aria-selected="false" aria-controls="p-ask" data-tab="ask">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h6"/></svg>Ask</button>
+  </div>
+</nav>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="glow" id="glow"></div>
+  <p class="msg" id="overlay-msg">Tap again to turn off</p>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
+
+  /* ---------- Tabs ---------- */
+  const tabs = $$('nav [role=tab]');
+  function showTab(name) {
+    tabs.forEach(t => {
+      const on = t.dataset.tab === name;
+      t.setAttribute('aria-selected', on);
+      $('#p-' + t.dataset.tab).hidden = !on;
+    });
+    store.set('hb-tab', name);
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  showTab(store.get('hb-tab', 'sounds'));
+
+  /* ---------- Wake lock ---------- */
+  let wakeLock = null;
+  async function keepAwake(on) {
+    try {
+      if (on && !wakeLock && navigator.wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+    } catch { wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (playing || !overlay.hidden)) keepAwake(true);
+  });
+
+  /* ---------- Sounds ---------- */
+  const NAMES = { white: 'white noise', pink: 'pink noise', brown: 'brown noise', ocean: 'ocean' };
+  let ctx = null, master = null, src = null, lfo = null, playing = false;
+  let sound = store.get('hb-sound', 'pink');
+  let fadeMins = store.get('hb-fade', 0);
+  let endsAt = 0, tick = null;
+  const vol = $('#vol');
+  vol.value = store.get('hb-vol', 45);
+
+  function makeBuffer(type) {
+    const len = ctx.sampleRate * 6;
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        if (type === 'white') d[i] = w * 0.35;
+        else if (type === 'pink') {
+          b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759;
+          b2 = 0.96900 * b2 + w * 0.1538520; b3 = 0.86650 * b3 + w * 0.3104856;
+          b4 = 0.55000 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.0168980;
+          d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.09; b6 = w * 0.115926;
+        } else { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+      }
+      // Crossfade the ends so the loop has no click
+      const fade = Math.floor(ctx.sampleRate * 0.25);
+      for (let i = 0; i < fade; i++) {
+        const t = i / fade;
+        d[i] = d[i] * t + d[len - fade + i] * (1 - t);
+      }
+    }
+    return buf;
+  }
+  const level = () => Math.pow(vol.value / 100, 2) * 0.9;
+
+  function startSound() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { $('#sound-status').textContent = "This browser can't play generated sound."; return; }
+      ctx = new AC();
+    }
+    ctx.resume();
+    master = ctx.createGain();
+    master.gain.setValueAtTime(0, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(level(), ctx.currentTime + 2);
+    master.connect(ctx.destination);
+    src = ctx.createBufferSource();
+    src.buffer = makeBuffer(sound === 'ocean' ? 'brown' : sound);
+    src.loop = true;
+    let node = src;
+    if (sound === 'ocean') {
+      // Slow swell: an LFO moves a gain stage between quiet and full, about every 9 seconds
+      const swell = ctx.createGain(); swell.gain.value = 0.6;
+      lfo = ctx.createOscillator(); lfo.frequency.value = 0.11;
+      const depth = ctx.createGain(); depth.gain.value = 0.4;
+      lfo.connect(depth).connect(swell.gain); lfo.start();
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+      node.connect(lp).connect(swell); node = swell;
+    }
+    node.connect(master);
+    src.start();
+    playing = true;
+    keepAwake(true);
+    armFade();
+    render();
+  }
+  function stopSound(fadeSec = 1.2) {
+    if (!playing) return;
+    const s = src, l = lfo, m = master;
+    const t = ctx.currentTime;
+    m.gain.cancelScheduledValues(t);
+    m.gain.setValueAtTime(m.gain.value, t);
+    m.gain.linearRampToValueAtTime(0, t + fadeSec);
+    setTimeout(() => { try { s.stop(); l && l.stop(); m.disconnect(); } catch {} }, fadeSec * 1000 + 100);
+    src = lfo = master = null; playing = false; endsAt = 0;
+    clearInterval(tick);
+    if ($('#overlay').hidden) keepAwake(false);
+    render();
+  }
+  function armFade() {
+    clearInterval(tick); endsAt = 0;
+    if (!playing || !fadeMins) { render(); return; }
+    endsAt = Date.now() + fadeMins * 60000;
+    tick = setInterval(() => {
+      const left = endsAt - Date.now();
+      if (left <= 120000 && master && !master._fading) {
+        master._fading = true;
+        const t = ctx.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(master.gain.value, t);
+        master.gain.linearRampToValueAtTime(0, t + Math.max(left, 1000) / 1000);
+      }
+      if (left <= 0) { stopSound(0.1); return; }
+      renderStatus();
+    }, 1000);
+    renderStatus();
+  }
+  function renderStatus() {
+    const el = $('#sound-status');
+    if (!playing) { el.textContent = ''; return; }
+    if (!endsAt) { el.textContent = 'Playing all night'; return; }
+    const left = Math.max(0, endsAt - Date.now());
+    const m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
+    el.textContent = `Fades out in ${m}:${String(s).padStart(2, '0')}`;
+  }
+  function render() {
+    $$('.sound').forEach(b => b.setAttribute('aria-pressed', b.dataset.sound === sound));
+    $$('[data-mins]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.mins) === fadeMins));
+    const btn = $('#play');
+    btn.classList.toggle('playing', playing);
+    $('#play-label').textContent = playing ? 'Stop' : 'Play ' + NAMES[sound];
+    renderStatus();
+  }
+  $('#play').addEventListener('click', () => playing ? stopSound() : startSound());
+  $$('.sound').forEach(b => b.addEventListener('click', () => {
+    sound = b.dataset.sound; store.set('hb-sound', sound);
+    if (playing) { stopSound(0.6); setTimeout(startSound, 650); } else render();
+  }));
+  $$('[data-mins]').forEach(b => b.addEventListener('click', () => {
+    fadeMins = Number(b.dataset.mins); store.set('hb-fade', fadeMins);
+    if (playing && master) {
+      master._fading = false;
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setValueAtTime(level(), ctx.currentTime);
+    }
+    armFade(); render();
+  }));
+  vol.addEventListener('input', () => {
+    store.set('hb-vol', Number(vol.value));
+    if (playing && master && !master._fading) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.1);
+  });
+  render();
+
+  /* ---------- Night light ---------- */
+  const overlay = $('#overlay'), bright = $('#bright');
+  bright.value = store.get('hb-bright', 35);
+  const applyBright = () => {
+    const v = bright.value / 100;
+    $('#glow').style.opacity = v;
+    $('#lamp-preview').style.filter = `brightness(${0.35 + v * 0.9})`;
+  };
+  bright.addEventListener('input', () => { store.set('hb-bright', Number(bright.value)); applyBright(); });
+  applyBright();
+  let lastTap = 0, msgTimer = null;
+  $('#lamp-on').addEventListener('click', async () => {
+    overlay.hidden = false;
+    keepAwake(true);
+    try { await document.documentElement.requestFullscreen?.(); } catch {}
+  });
+  overlay.addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastTap < 3000) {
+      overlay.hidden = true; lastTap = 0;
+      $('#overlay-msg').classList.remove('show');
+      if (!playing) keepAwake(false);
+      try { document.fullscreenElement && document.exitFullscreen(); } catch {}
+      return;
+    }
+    lastTap = now;
+    const msg = $('#overlay-msg');
+    msg.classList.add('show');
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => msg.classList.remove('show'), 2800);
+  });
+
+  /* ---------- Routine ---------- */
+  const DEFAULT_STEPS = [
+    { id: 's1', text: 'Dinner finished, quiet play', mins: 10 },
+    { id: 's2', text: 'Bath', mins: 10 },
+    { id: 's3', text: 'Nappy and pyjamas', mins: 5 },
+    { id: 's4', text: 'Milk, then brush teeth', mins: 10 },
+    { id: 's5', text: 'Two books in dim light', mins: 10 },
+    { id: 's6', text: 'Song and cuddle', mins: 5 },
+    { id: 's7', text: 'Into the cot drowsy but awake, lights out', mins: 2 }
+  ];
+  const today = () => new Date(Date.now() - 6 * 3600000).toDateString(); // a "night" runs 6am to 6am
+  let steps = store.get('hb-steps', DEFAULT_STEPS);
+  let night = store.get('hb-night', { date: today(), done: [] });
+  if (night.date !== today()) night = { date: today(), done: [] };
+
+  function saveRoutine() { store.set('hb-steps', steps); store.set('hb-night', night); }
+  function renderRoutine() {
+    const ul = $('#steps'); ul.textContent = '';
+    steps.forEach(st => {
+      const done = night.done.includes(st.id);
+      const li = document.createElement('li');
+      li.className = 'step' + (done ? ' done' : '');
+      const lab = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = done; cb.id = 'cb-' + st.id;
+      cb.addEventListener('change', () => {
+        night.done = cb.checked ? [...new Set([...night.done, st.id])] : night.done.filter(x => x !== st.id);
+        saveRoutine(); renderRoutine();
+      });
+      const txt = document.createElement('span'); txt.className = 'txt'; txt.textContent = st.text;
+      lab.append(cb, txt);
+      li.append(lab);
+      if (st.mins) { const m = document.createElement('span'); m.className = 'mins'; m.textContent = st.mins + ' min'; li.append(m); }
+      const x = document.createElement('button');
+      x.className = 'x'; x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + st.text);
+      x.addEventListener('click', () => { steps = steps.filter(s => s.id !== st.id); night.done = night.done.filter(i => i !== st.id); saveRoutine(); renderRoutine(); });
+      li.append(x);
+      ul.append(li);
+    });
+    const n = steps.filter(s => night.done.includes(s.id)).length;
+    $('#routine-count').textContent = `${n} of ${steps.length}`;
+    $('#routine-bar').style.width = steps.length ? (n / steps.length * 100) + '%' : '0';
+    $('#routine-done').hidden = !(steps.length && n === steps.length);
+  }
+  $('#add-step').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('#new-step').value.trim();
+    if (!v) return;
+    steps.push({ id: 's' + Date.now(), text: v, mins: 0 });
+    $('#new-step').value = '';
+    saveRoutine(); renderRoutine();
+  });
+  $('#reset-routine').addEventListener('click', () => { night = { date: today(), done: [] }; saveRoutine(); renderRoutine(); });
+  renderRoutine();
+
+  /* ---------- Greeting ---------- */
+  const h = new Date().getHours();
+  $('#greeting').textContent = h >= 17 || h < 5 ? (h >= 17 && h < 21 ? 'Getting ready for bed' : 'Here for the night shift') : 'Bedtime helper for a 16-month-old';
+
+  /* ---------- Ask Claude ---------- */
+  const RULES = `You are helping the parents of a 16-month-old toddler in Perth, Western Australia. The toddler has trouble settling at bedtime and wakes often overnight. The parents are reading your reply on a phone, often in the middle of the night, so:
+- Start with one short, warm sentence that makes them feel less alone.
+- Then give 3 to 5 concrete, gentle, evidence-based things to try, as a short bulleted list. Plain words, no headings, no jargon.
+- Keep the whole reply under 150 words unless they ask for more.
+- Typical needs at this age: about 11 to 14 hours of sleep in 24 hours, many toddlers moving from two naps to one between 12 and 18 months, separation anxiety, and molars coming through.
+- Follow Red Nose Australia safe sleep advice (on the back, in a cot, face and head uncovered, no pillows or bumpers). Never suggest medication doses.
+- Don't diagnose. If they mention fever, breathing pauses, loud snoring most nights, signs of pain, not feeding, or anything that worries them, suggest their GP or child health nurse, healthdirect on 1800 022 222, or the Ngala Parenting Line on (08) 9368 9368.
+Tonight's routine progress: {ROUTINE}`;
+  const turns = [];
+  let sample = null, ctl = null;
+
+  function md(text) {
+    const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const out = []; let list = null;
+    for (const raw of text.split('\n')) {
+      const line = raw.trim();
+      const m = line.match(/^([-*•]|\d+[.)])\s+(.*)$/);
+      if (m) {
+        const tag = /\d/.test(m[1]) ? 'ol' : 'ul';
+        if (!list || list.tag !== tag) { if (list) out.push(`</${list.tag}>`); list = { tag }; out.push(`<${tag}>`); }
+        out.push(`<li>${inline(m[2])}</li>`);
+      } else {
+        if (list) { out.push(`</${list.tag}>`); list = null; }
+        if (line) out.push(`<p>${inline(line.replace(/^#+\s*/, ''))}</p>`);
+      }
+    }
+    if (list) out.push(`</${list.tag}>`);
+    return out.join('');
+  }
+  function bubble(who, html) {
+    const b = document.createElement('div');
+    b.className = 'bubble ' + who;
+    b.innerHTML = html;
+    $('#thread').append(b);
+    b.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    return b;
+  }
+  const ERR = {
+    not_granted: 'Claude needs your OK to answer here. Open the artifact\'s permissions to allow it.',
+    sampling_disabled: 'Claude isn\'t available on this account.',
+    rate_limited: 'You\'ve hit your Claude usage limit for now. Try again a bit later.',
+    session_expired: 'Please sign in to Claude again, then ask.',
+    refused: 'Claude couldn\'t answer that one. Try describing it differently.'
+  };
+  async function ask(text) {
+    if (!sample || !text.trim()) return;
+    const sendBtn = $('#send');
+    sendBtn.disabled = true;
+    bubble('me', md(text));
+    turns.push({ role: 'user', content: text });
+    const reply = bubble('claude', '<span class="thinking">Thinking…</span>');
+    const done = steps.filter(s => night.done.includes(s.id)).map(s => s.text);
+    const routine = done.length ? `done so far: ${done.join('; ')}` : 'not started yet';
+    ctl = new AbortController();
+    try {
+      const keep = turns.slice(-8);
+      if (keep[0].role !== 'user') keep.shift();
+      const { text: answer } = await sample(
+        [{ role: 'user', content: RULES.replace('{ROUTINE}', routine) }, ...keep],
+        { cache: false, signal: ctl.signal, onText: ({ text }) => { reply.innerHTML = md(text); } }
+      );
+      reply.innerHTML = md(answer);
+      turns.push({ role: 'assistant', content: answer });
+    } catch (e) {
+      turns.pop();
+      if (e && e.text) reply.innerHTML = md(e.text) + '<p class="hint">(Answer was cut off.)</p>';
+      else reply.innerHTML = `<p class="hint">${ERR[e && e.code] || 'Something went wrong reaching Claude. Try again in a moment.'}</p>`;
+      if (e && (e.code === 'sampling_disabled' || e.code === 'not_declared')) { $('#ask-ui').hidden = true; $('#ask-off').hidden = false; }
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+  $('#askform').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('#ask-input').value; $('#ask-input').value = '';
+    ask(v);
+  });
+  $('#ask-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#askform').requestSubmit(); }
+  });
+  $$('#quick .chip').forEach(c => c.addEventListener('click', () => ask(c.textContent)));
+
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('sample').then(s => {
+      sample = s;
+      if (!s) { $('#ask-ui').hidden = true; $('#ask-off').hidden = false; }
+    }).catch(() => { $('#ask-ui').hidden = true; $('#ask-off').hidden = false; });
+  } else {
+    $('#ask-ui').hidden = true; $('#ask-off').hidden = false;
+  }
+})();
+</script>
