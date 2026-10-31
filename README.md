@@ -9,7 +9,7 @@ A calm bedtime and night-waking helper for a 16-month-old who finds it hard to s
 - **Recommendations**: suggestions based on the last few nights in the log (feeds, late bedtimes, long wakings, late naps, early mornings), plus a sleep guide for 16 months.
 - **Nap timer and bedtime window**: log naps and get a suggested bedtime based on how long she's been awake, plus a summary of last night.
 
-- **Themes**: Dusk, Tide, Meadow and Blossom, each in light and dark. Choose Match phone, Light, Dark, or Bedtime (dark from 6 pm to 7 am).
+- **Themes**: Sleepy Owl (aubergine and amber), Whale Song (sea blue and teal), Honey Bear (sage and honey) and Fairy Floss (dusky rose), each in light and dark. Choose Match phone, Light, Dark, or Bedtime (dark from 6 pm to 7 am).
 - **Sleep sounds**: white, pink, brown noise and a slow "ocean" swell, generated on the phone (no downloads). Volume control and a fade-out timer (30 min, 1 hr, 2 hrs or all night). Keeps the screen awake while playing.
 - **Night light**: a full-screen dim red glow for feeds and resettling, with a brightness slider. Double-tap to turn off.
 - **Bedtime routine**: a checklist of the same steps every night (editable), with progress that resets each day.
