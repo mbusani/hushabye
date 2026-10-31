@@ -11,22 +11,37 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600&display=swap">
 <style>
-/* Layout: one-screen night app — header, a scrolling panel, a bottom tab bar. Single dark world on purpose: it's used in a dark bedroom. */
+/* Layout: one-screen night app — header, a scrolling panel, a bottom tab bar.
+   Four themes, each with a light and a dark look. Dark-first (it's mostly used in a dark bedroom);
+   the script sets data-hb-look on the root from the viewer's choice. Without script, Dusk dark applies. */
 :root {
-  --night: #15121f;      /* aubergine-indigo sky */
+  --night: #15121f;      /* page background */
   --dusk: #211c31;       /* raised surfaces */
   --dusk-2: #2c2541;     /* pressed / borders */
-  --moon: #ece2d2;       /* warm parchment text */
+  --moon: #ece2d2;       /* main text */
   --haze: #a296b3;       /* secondary text */
-  --ember: #e39a63;      /* warm amber accent */
-  --ember-ink: #2a1a10;  /* text on ember */
-  --glow: #c2332b;       /* night-light red */
+  --ember: #e39a63;      /* accent */
+  --ember-ink: #2a1a10;  /* text on accent */
+  --glow: #c2332b;       /* night-light red, same in every theme */
   --ok: #8fc4a1;
   --font-display: "Young Serif", Georgia, "Times New Roman", serif;
   --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --nav-h: 64px;
   color-scheme: dark;
 }
+/* Dusk: aubergine night, amber glow */
+:root[data-hb-look="dusk-light"] { --night: #f4f0f7; --dusk: #ffffff; --dusk-2: #e4dcec; --moon: #2a2238; --haze: #6b6180; --ember: #b45f2a; --ember-ink: #ffffff; --ok: #2f7a4d; color-scheme: light; }
+/* Tide: deep sea blue, soft teal */
+:root[data-hb-look="tide-dark"] { --night: #0f1a22; --dusk: #172630; --dusk-2: #223744; --moon: #e2eef0; --haze: #8ea8b1; --ember: #6cc4c0; --ember-ink: #062120; --ok: #9ed3a8; color-scheme: dark; }
+:root[data-hb-look="tide-light"] { --night: #edf5f7; --dusk: #ffffff; --dusk-2: #d5e5ea; --moon: #15303a; --haze: #546f79; --ember: #1d7a77; --ember-ink: #ffffff; --ok: #2c7a4b; color-scheme: light; }
+/* Meadow: sage green, honey */
+:root[data-hb-look="meadow-dark"] { --night: #131913; --dusk: #1c251c; --dusk-2: #283428; --moon: #e5ebdc; --haze: #99aa95; --ember: #d2bb5f; --ember-ink: #221d06; --ok: #a7d49b; color-scheme: dark; }
+:root[data-hb-look="meadow-light"] { --night: #f1f4ea; --dusk: #ffffff; --dusk-2: #dde5d2; --moon: #232c20; --haze: #5f6c5a; --ember: #7a6612; --ember-ink: #ffffff; --ok: #3a7a2f; color-scheme: light; }
+/* Blossom: dusky rose */
+:root[data-hb-look="blossom-dark"] { --night: #1c1317; --dusk: #2a1c22; --dusk-2: #3a2830; --moon: #f3e3e7; --haze: #b496a0; --ember: #ec93a6; --ember-ink: #2a0d15; --ok: #a9d2a9; color-scheme: dark; }
+:root[data-hb-look="blossom-light"] { --night: #fbf1f3; --dusk: #ffffff; --dusk-2: #f0dbe1; --moon: #3a2128; --haze: #7d5d67; --ember: #b0435c; --ember-ink: #ffffff; --ok: #2f7a4d; color-scheme: light; }
+/* Smooth the change when switching themes */
+body, nav, .card, .now-card, .step, .sound, .chip { transition: background-color .25s, color .25s, border-color .25s; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
@@ -197,7 +212,21 @@ input[type=range] { width: 100%; accent-color: var(--ember); }
 .guide li strong { color: var(--moon); font-weight: 600; }
 
 /* How to use */
-.help-btn { margin-left: auto; background: transparent; border: 1px solid var(--dusk-2); border-radius: 999px; padding: 7px 12px; font-size: .8125rem; color: var(--moon); white-space: nowrap; }
+.head-btns { margin-left: auto; display: flex; gap: 8px; flex: none; }
+.help-btn { background: transparent; border: 1px solid var(--dusk-2); border-radius: 999px; padding: 7px 12px; font-size: .8125rem; color: var(--moon); white-space: nowrap; }
+.icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+.icon-btn svg { width: 18px; height: 18px; }
+header > div:nth-child(2) { min-width: 0; }
+/* Appearance */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode { background: var(--dusk); border: 1px solid var(--dusk-2); border-radius: 12px; padding: 12px; text-align: left; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mode span { color: var(--haze); font-size: .8125rem; }
+.mode[aria-pressed="true"], .swatch[aria-pressed="true"] { border-color: var(--ember); box-shadow: 0 0 0 1px var(--ember) inset; }
+.swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.swatch { background: var(--dusk); border: 1px solid var(--dusk-2); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; text-align: left; min-width: 0; }
+.swatch .sky { height: 54px; border-radius: 9px; position: relative; overflow: hidden; display: flex; align-items: flex-end; gap: 5px; padding: 8px; }
+.swatch .sky i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.swatch .sky b { position: absolute; top: 8px; right: 10px; width: 16px; height: 16px; border-radius: 50%; }
 .help {
   position: fixed; inset: 0; z-index: 60; background: var(--night); overflow-y: auto;
   padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -244,7 +273,12 @@ nav button[aria-selected="true"] { color: var(--ember); }
       <h1>Hushabye</h1>
       <p class="sub" id="greeting">Bedtime helper for a 16-month-old</p>
     </div>
-    <button class="help-btn" type="button" id="help-open" aria-haspopup="dialog">How to use</button>
+    <div class="head-btns">
+      <button class="help-btn icon-btn" type="button" id="look-open" aria-haspopup="dialog" aria-label="Appearance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>
+      </button>
+      <button class="help-btn" type="button" id="help-open" aria-haspopup="dialog">How to use</button>
+    </div>
   </header>
 
   <!-- Log -->
@@ -448,6 +482,29 @@ nav button[aria-selected="true"] { color: var(--ember); }
   </div>
 </nav>
 
+<div class="help" id="look" role="dialog" aria-modal="true" aria-labelledby="look-title" hidden>
+  <div class="help-inner">
+    <div class="help-top">
+      <h2 id="look-title">Appearance</h2>
+      <button class="ghost" type="button" id="look-close">Done</button>
+    </div>
+    <section>
+      <h3>Light or dark</h3>
+      <div class="modes" role="group" aria-label="Light or dark">
+        <button class="mode" type="button" data-mode="bedtime"><strong>Bedtime</strong><span>Dark from 6 pm to 7 am</span></button>
+        <button class="mode" type="button" data-mode="system"><strong>Match phone</strong><span>Follows your phone's setting</span></button>
+        <button class="mode" type="button" data-mode="light"><strong>Light</strong><span>Always light</span></button>
+        <button class="mode" type="button" data-mode="dark"><strong>Dark</strong><span>Always dark</span></button>
+      </div>
+      <p class="hint">Dark is gentler in a dim bedroom at night. The night light stays red in every theme.</p>
+    </section>
+    <section>
+      <h3>Theme</h3>
+      <div class="swatches" role="group" aria-label="Theme" id="swatches"></div>
+    </section>
+  </div>
+</div>
+
 <div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
   <div class="help-inner">
     <div class="help-top">
@@ -507,6 +564,7 @@ nav button[aria-selected="true"] { color: var(--ember); }
       <h3>Handy to know</h3>
       <ul>
         <li><strong>Logged something late?</strong> Tap its time in the list and change it. Tap Delete twice to remove an entry.</li>
+        <li><strong>Change the look</strong> with the round button next to "How to use". Pick a theme, and choose light, dark, or Bedtime, which goes dark from 6 pm to 7 am.</li>
         <li><strong>Keep Hushabye open while a sound plays.</strong> The screen stays on, so use the red light to keep it dim.</li>
         <li><strong>Hushabye isn't medical advice.</strong> If she seems unwell, snores loudly most nights, or pauses in her breathing, see your GP or call healthdirect on <span class="num" style="user-select: all">1800 022 222</span>. In an emergency, call 000.</li>
       </ul>
@@ -530,6 +588,37 @@ nav button[aria-selected="true"] { color: var(--ember); }
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
   };
   let babyName = store.get('hb-name', '');
+
+  /* ---------- Appearance: theme + light/dark ---------- */
+  const THEMES = {
+    dusk:    { name: 'Dusk',    dark: ['#15121f', '#2c2541', '#e39a63', '#ece2d2'], light: ['#f4f0f7', '#e4dcec', '#b45f2a', '#2a2238'] },
+    tide:    { name: 'Tide',    dark: ['#0f1a22', '#223744', '#6cc4c0', '#e2eef0'], light: ['#edf5f7', '#d5e5ea', '#1d7a77', '#15303a'] },
+    meadow:  { name: 'Meadow',  dark: ['#131913', '#283428', '#d2bb5f', '#e5ebdc'], light: ['#f1f4ea', '#dde5d2', '#7a6612', '#232c20'] },
+    blossom: { name: 'Blossom', dark: ['#1c1317', '#3a2830', '#ec93a6', '#f3e3e7'], light: ['#fbf1f3', '#f0dbe1', '#b0435c', '#3a2128'] }
+  };
+  let lookMode = store.get('hb-mode', 'bedtime');
+  let lookTheme = store.get('hb-theme', 'dusk');
+  if (!THEMES[lookTheme]) lookTheme = 'dusk';
+  const darkMQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function isDark() {
+    if (lookMode === 'dark') return true;
+    if (lookMode === 'light') return false;
+    if (lookMode === 'bedtime') { const h = new Date().getHours(); return h >= 18 || h < 7; }
+    const vt = document.documentElement.getAttribute('data-theme'); // the Claude viewer's own choice, if set
+    if (vt === 'dark') return true;
+    if (vt === 'light') return false;
+    return darkMQ ? darkMQ.matches : true;
+  }
+  function applyLook() {
+    const dark = isDark();
+    document.documentElement.setAttribute('data-hb-look', `${lookTheme}-${dark ? 'dark' : 'light'}`);
+    const tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.setAttribute('content', THEMES[lookTheme][dark ? 'dark' : 'light'][0]);
+  }
+  applyLook();
+  darkMQ && darkMQ.addEventListener && darkMQ.addEventListener('change', applyLook);
+  new MutationObserver(applyLook).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  setInterval(() => { if (lookMode === 'bedtime') applyLook(); }, 60000);
 
   /* ---------- Tabs ---------- */
   const tabs = $$('nav [role=tab]');
@@ -1170,6 +1259,36 @@ nav button[aria-selected="true"] { color: var(--ember); }
   $('#help-done').addEventListener('click', closeHelp);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !help.hidden) closeHelp(); });
   if (!store.get('hb-seen-help', false)) openHelp();
+
+  /* Appearance sheet */
+  const look = $('#look');
+  let lookReturn = null;
+  function renderLookSheet() {
+    $$('#look .mode').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === lookMode));
+    const sw = $('#swatches'); sw.textContent = '';
+    const shade = isDark() ? 'dark' : 'light';
+    Object.entries(THEMES).forEach(([id, t]) => {
+      const [bg, surface, accent, text] = t[shade];
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'swatch'; b.setAttribute('aria-pressed', id === lookTheme);
+      const sky = document.createElement('span'); sky.className = 'sky'; sky.style.background = bg;
+      const moonDot = document.createElement('b'); moonDot.style.background = text;
+      [surface, accent].forEach(c => { const i = document.createElement('i'); i.style.background = c; sky.append(i); });
+      sky.append(moonDot);
+      const label = document.createElement('strong'); label.textContent = t.name;
+      b.append(sky, label);
+      b.addEventListener('click', () => { lookTheme = id; store.set('hb-theme', id); applyLook(); renderLookSheet(); });
+      sw.append(b);
+    });
+  }
+  $$('#look .mode').forEach(b => b.addEventListener('click', () => {
+    lookMode = b.dataset.mode; store.set('hb-mode', lookMode); applyLook(); renderLookSheet();
+  }));
+  function openLook() { lookReturn = document.activeElement; renderLookSheet(); look.hidden = false; look.scrollTop = 0; $('#look-close').focus(); }
+  function closeLook() { look.hidden = true; if (lookReturn && lookReturn.focus) lookReturn.focus(); }
+  $('#look-open').addEventListener('click', openLook);
+  $('#look-close').addEventListener('click', closeLook);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !look.hidden) closeLook(); });
 
   /* ---------- Ask Claude ---------- */
   const RULES = `You are helping the parents of {NAME}, a 16-month-old toddler in Perth, Western Australia. She has trouble settling at bedtime, wakes often overnight, and finds it especially hard to go back to sleep after a night waking. The parents are reading your reply on a phone, often in the middle of the night, so:
