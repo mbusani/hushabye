@@ -152,6 +152,31 @@ input[type=range] { width: 100%; accent-color: var(--ember); }
 .helplines .num { font-variant-numeric: tabular-nums; color: var(--moon); font-weight: 600; user-select: all; }
 .unavailable { background: var(--dusk); border-radius: 14px; padding: 14px; color: var(--haze); }
 
+/* Log */
+.now-card { background: var(--dusk); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.now-status { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.3; text-wrap: balance; }
+.now-sub { color: var(--haze); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.actions .big-play { padding: 15px; }
+.second { background: transparent; border: 1px solid var(--dusk-2); color: var(--moon); border-radius: 999px; padding: 13px; font-weight: 500; width: 100%; }
+.helped { display: flex; flex-direction: column; gap: 8px; }
+.card { background: var(--dusk); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+.card .big { font-family: var(--font-display); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ev { display: grid; grid-template-columns: minmax(96px, auto) 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--dusk); }
+.ev input[type=time] {
+  background: transparent; border: 0; color: var(--moon); font: inherit; font-variant-numeric: tabular-nums;
+  padding: 2px 0; width: 100%; min-width: 96px;
+}
+.ev .what { min-width: 0; overflow-wrap: anywhere; }
+.ev .what small { display: block; color: var(--haze); font-size: .8125rem; }
+.ev .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.dot.nap { background: var(--ok); } .dot.night { background: #8f9be0; } .dot.wake { background: var(--ember); }
+.del { background: none; border: 0; color: var(--haze); font-size: .8125rem; padding: 6px; }
+.del.confirm { color: var(--ember); font-weight: 600; }
+.sync { color: var(--haze); font-size: .8125rem; }
+.empty { color: var(--haze); font-size: .9rem; padding: 6px 0; }
+
 /* Tab bar */
 nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
@@ -162,7 +187,7 @@ nav {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
-nav .tabs { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h); }
+nav .tabs { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); height: var(--nav-h); }
 nav button {
   background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   color: var(--haze); font-size: .75rem; font-weight: 500;
@@ -182,6 +207,36 @@ nav button[aria-selected="true"] { color: var(--ember); }
       <p class="sub" id="greeting">Bedtime helper for a 16-month-old</p>
     </div>
   </header>
+
+  <!-- Log -->
+  <section class="panel" id="p-log" aria-labelledby="t-log" hidden>
+    <div class="now-card">
+      <div>
+        <p class="now-status" id="now-status">Loading the log…</p>
+        <p class="now-sub" id="now-sub"></p>
+      </div>
+      <div class="helped" id="helped" hidden>
+        <span class="label">What helped?</span>
+        <div class="chips" id="helped-chips"></div>
+      </div>
+      <div class="actions" id="actions"></div>
+    </div>
+    <div class="card" id="bedtime-card" hidden>
+      <span class="label">Bedtime window</span>
+      <span class="big" id="bedtime-window"></span>
+      <span class="hint" id="bedtime-why"></span>
+    </div>
+    <div class="card" id="lastnight-card" hidden>
+      <span class="label">Last night</span>
+      <span id="lastnight"></span>
+    </div>
+    <div class="row" style="justify-content: space-between;">
+      <span class="label" id="timeline-label">Today</span>
+      <span class="sync" id="sync"></span>
+    </div>
+    <ul class="timeline" id="timeline"></ul>
+    <p class="hint">Logged something late? Tap its time to change it.</p>
+  </section>
 
   <!-- Sounds -->
   <section class="panel" id="p-sounds" aria-labelledby="t-sounds">
@@ -246,12 +301,17 @@ nav button[aria-selected="true"] { color: var(--ember); }
   <section class="panel" id="p-ask" aria-labelledby="t-ask" hidden>
     <h2>Ask Claude</h2>
     <p class="hint">Describe what's happening tonight and get calm, practical ideas. It uses your own Claude account.</p>
+    <div class="add">
+      <input id="baby-name" placeholder="Baby's first name" aria-label="Baby's first name" maxlength="30" autocomplete="off">
+      <button class="ghost" type="button" id="save-name">Save</button>
+    </div>
     <div id="ask-ui">
       <div class="prompts" id="quick">
         <button class="chip" type="button">Won't settle at bedtime</button>
         <button class="chip" type="button">Woke at 2am, won't go back down</button>
         <button class="chip" type="button">Dropping to one nap?</button>
         <button class="chip" type="button">Could it be teething?</button>
+        <button class="chip" type="button">What patterns do you see in our log?</button>
       </div>
       <div class="thread" id="thread" aria-live="polite" style="margin-top:16px"></div>
       <form class="askform" id="askform" style="margin-top:16px">
@@ -271,6 +331,8 @@ nav button[aria-selected="true"] { color: var(--ember); }
 
 <nav aria-label="Sections">
   <div class="tabs" role="tablist">
+    <button role="tab" id="t-log" aria-selected="false" aria-controls="p-log" data-tab="log">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Log</button>
     <button role="tab" id="t-sounds" aria-selected="true" aria-controls="p-sounds" data-tab="sounds">
       <svg viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 11v2"/></svg>Sounds</button>
     <button role="tab" id="t-light" aria-selected="false" aria-controls="p-light" data-tab="light">
@@ -308,7 +370,8 @@ nav button[aria-selected="true"] { color: var(--ember); }
     window.scrollTo(0, 0);
   }
   tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
-  showTab(store.get('hb-tab', 'sounds'));
+  const savedTab = store.get('hb-tab', 'log');
+  showTab($('#p-' + savedTab) ? savedTab : 'log');
 
   /* ---------- Wake lock ---------- */
   let wakeLock = null;
@@ -545,19 +608,332 @@ nav button[aria-selected="true"] { color: var(--ember); }
   $('#reset-routine').addEventListener('click', () => { night = { date: today(), done: [] }; saveRoutine(); renderRoutine(); });
   renderRoutine();
 
-  /* ---------- Greeting ---------- */
-  const h = new Date().getHours();
-  $('#greeting').textContent = h >= 17 || h < 5 ? (h >= 17 && h < 21 ? 'Getting ready for bed' : 'Here for the night shift') : 'Bedtime helper for a 16-month-old';
+  /* ---------- Night log + nap timer ---------- */
+  const HOUR = 3600000, MIN = 60000;
+  const pad = n => String(n).padStart(2, '0');
+  const sleepKey = t => { const d = new Date(t - 6 * HOUR); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const prevKey = k => { const [y, m, d] = k.split('-').map(Number); return sleepKey(new Date(y, m - 1, d - 1, 12).getTime() + 6 * HOUR); };
+  const fmtTime = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?([AP])\.?M\.?/i, (m, p) => ' ' + p.toLowerCase() + 'm');
+  const fmtDur = ms => { const m = Math.max(0, Math.round(ms / MIN)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${pad(m % 60)}m`; };
+  const HELPED = ['Feed', 'Cuddle', 'Rocking', 'Dummy', 'Sound', 'Nappy change', 'Water', 'Settled alone'];
+  const LABEL = { nap_start: 'Nap started', nap_end: 'Nap ended', bed: 'Asleep for the night', wake: 'Woke up', asleep: 'Back asleep', up: 'Up for the day' };
+  const DOT = { nap_start: 'nap', nap_end: 'nap', bed: 'night', asleep: 'night', up: 'wake', wake: 'wake' };
+
+  const Log = { mode: 'loading', days: {}, db: null, user: null, uid: null, canWrite: true, queue: {}, stale: false };
+  let helpedSel = [];
+
+  function eventsOf(key) {
+    const day = Log.days[key];
+    if (!day || !day.events) return [];
+    return Object.entries(day.events).map(([id, e]) => ({ id, ...e })).filter(e => !e.deleted && typeof e.at === 'number').sort((a, b) => a.at - b.at);
+  }
+  function summarize(evs) {
+    const s = { naps: [], napOpen: null, bed: null, up: null, wakes: [], wakeOpen: null };
+    for (const e of evs) {
+      if (e.type === 'nap_start') s.napOpen = e.at;
+      else if (e.type === 'nap_end') { s.naps.push({ start: s.napOpen, end: e.at }); s.napOpen = null; }
+      else if (e.type === 'bed') s.bed = e.at;
+      else if (e.type === 'wake') s.wakeOpen = e.at;
+      else if (e.type === 'asleep') { s.wakes.push({ at: s.wakeOpen ?? e.at, back: e.at, helped: e.helped || [] }); s.wakeOpen = null; }
+      else if (e.type === 'up') s.up = e.at;
+    }
+    if (s.wakeOpen) s.wakes.push({ at: s.wakeOpen, back: null, helped: [] });
+    s.awakeMs = s.wakes.reduce((t, w) => t + ((w.back || Date.now()) - w.at), 0);
+    return s;
+  }
+  // The night stays "active" into the morning until someone taps Up for the day (or 11am)
+  function activeKey() {
+    const now = Date.now(), k = sleepKey(now), p = prevKey(k);
+    const hr = new Date(now).getHours();
+    if (hr >= 6 && hr < 11) { const ps = summarize(eventsOf(p)); if (ps.bed && !ps.up) return p; }
+    return k;
+  }
+
+  /* storage: shared db inside Claude, this phone otherwise */
+  function saveLocal() {
+    const keys = Object.keys(Log.days).sort().reverse().slice(0, 60);
+    const keep = {}; keys.forEach(k => keep[k] = Log.days[k]);
+    Log.days = keep; store.set('hb-days', keep);
+  }
+  function useLocal() {
+    Log.mode = 'local'; Log.db = null;
+    Log.days = store.get('hb-days', {});
+    renderLog();
+  }
+  function write(key, fn) {
+    const prev = Log.queue[key] || Promise.resolve();
+    const next = prev.then(fn, fn);
+    Log.queue[key] = next.catch(() => {});
+    return next;
+  }
+  async function putEvent(key, id, patch) {
+    if (Log.mode !== 'db') {
+      const day = Log.days[key] || (Log.days[key] = { key, events: {} });
+      day.events[id] = { ...(day.events[id] || {}), ...patch };
+      saveLocal(); renderLog(); return;
+    }
+    const ref = Log.db.collection('days').doc(key);
+    try {
+      await write(key, async () => {
+        try { await ref.update({ events: { [id]: patch } }); }
+        catch (e) {
+          if (e && e.code === 'invalid_argument' && !Log.days[key]) await ref.set({ key, events: { [id]: patch } });
+          else throw e;
+        }
+      });
+    } catch (e) {
+      if (e && e.code === 'invalid_argument') { Log.canWrite = false; renderLog(); }
+      else if (e && e.code === 'quota_exceeded') $('#sync').textContent = 'The shared log is full. Ask the owner to clear old days.';
+      else $('#sync').textContent = "Couldn't save that. Check your connection and try again.";
+    }
+  }
+  const newId = () => 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function logEvent(type, extra = {}) {
+    const ev = { type, at: Date.now(), ...extra };
+    if (Log.uid) ev.by = Log.uid;
+    putEvent(activeKey(), newId(), ev);
+  }
+
+  function btn(text, cls, onClick) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = cls; b.textContent = text;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function renderLog() {
+    if (Log.mode === 'loading') return;
+    const key = activeKey(), evs = eventsOf(key), s = summarize(evs), last = evs[evs.length - 1];
+    const now = Date.now();
+    const night = s.bed && !s.up;
+
+    // Status
+    let status = 'Nothing logged yet today', sub = 'Start with a nap, or tap "Asleep for the night" at bedtime.';
+    if (last) {
+      const since = fmtDur(now - last.at);
+      if (last.type === 'nap_start') { status = `Napping · ${since}`; sub = `Went down at ${fmtTime(last.at)}`; }
+      else if (last.type === 'nap_end') { status = `Awake · ${since}`; sub = `Nap ended at ${fmtTime(last.at)}`; }
+      else if (last.type === 'bed' || last.type === 'asleep') { status = `Asleep · ${since}`; sub = `${last.type === 'bed' ? 'Went down' : 'Back asleep'} at ${fmtTime(last.at)}`; }
+      else if (last.type === 'wake') { status = `Awake · ${since}`; sub = `Woke at ${fmtTime(last.at)}${s.wakes.length > 1 ? ` · waking ${s.wakes.length} tonight` : ''}`; }
+      else if (last.type === 'up') { status = 'Up for the day'; sub = `Since ${fmtTime(last.at)}`; }
+    }
+    $('#now-status').textContent = status;
+    $('#now-sub').textContent = sub;
+
+    // Actions
+    const act = $('#actions'); act.textContent = '';
+    const waking = night && last && last.type === 'wake';
+    $('#helped').hidden = !waking || !Log.canWrite;
+    if (!Log.canWrite) {
+      const p = document.createElement('p'); p.className = 'hint';
+      p.textContent = 'You can see the log, but not add to it. Ask the owner to give you edit access.';
+      act.append(p);
+    } else if (waking) {
+      const chips = $('#helped-chips'); chips.textContent = '';
+      HELPED.forEach(h => {
+        const c = btn(h, 'chip', () => { helpedSel = helpedSel.includes(h) ? helpedSel.filter(x => x !== h) : [...helpedSel, h]; c.setAttribute('aria-pressed', helpedSel.includes(h)); });
+        c.setAttribute('aria-pressed', helpedSel.includes(h));
+        chips.append(c);
+      });
+      act.append(btn('Back asleep', 'big-play', () => { logEvent('asleep', { helped: helpedSel }); helpedSel = []; }));
+    } else if (night) {
+      act.append(btn('Woke up', 'big-play', () => logEvent('wake')));
+      act.append(btn('Up for the day', 'second', () => logEvent('up')));
+    } else if (s.napOpen) {
+      act.append(btn('Nap ended', 'big-play', () => logEvent('nap_end')));
+    } else {
+      act.append(btn('Nap started', 'big-play', () => logEvent('nap_start')));
+      act.append(btn('Asleep for the night', 'second', () => logEvent('bed')));
+    }
+
+    // Bedtime window (daytime only)
+    const bc = $('#bedtime-card');
+    bc.hidden = night || !!s.bed;
+    if (!bc.hidden) {
+      const hr = new Date(now).getHours();
+      if (s.napOpen) {
+        $('#bedtime-window').textContent = 'After this nap';
+        $('#bedtime-why').textContent = "Tap Nap ended when the baby wakes and you'll see the best time for bed.";
+      } else if (s.naps.length) {
+        const lastEnd = s.naps[s.naps.length - 1].end;
+        const two = s.naps.length >= 2;
+        const base = new Date(lastEnd);
+        const clampTo = (t, h, m) => { const d = new Date(base); d.setHours(h, m, 0, 0); return d.getTime(); };
+        let a = lastEnd + (two ? 3.5 : 4.5) * HOUR, b = lastEnd + (two ? 4.5 : 5.5) * HOUR;
+        const lo = clampTo(0, 17, 45), hi = clampTo(0, 20, 30);
+        a = Math.min(Math.max(a, lo), hi); b = Math.min(Math.max(b, lo), hi);
+        $('#bedtime-window').textContent = a === b ? `Around ${fmtTime(a)}` : `${fmtTime(a)} to ${fmtTime(b)}`;
+        $('#bedtime-why').textContent = `${s.naps.length} nap${two ? 's' : ''} today, last one ended at ${fmtTime(lastEnd)}. At 16 months, most toddlers settle best after about ${two ? '3½ to 4½' : '4½ to 5½'} hours awake.`;
+      } else if (hr >= 15) {
+        $('#bedtime-window').textContent = 'Early bedtime tonight';
+        $('#bedtime-why').textContent = 'No nap logged today. An earlier bed, around 6 to 6:30 pm, helps an overtired toddler settle.';
+      } else {
+        $('#bedtime-window').textContent = 'Log today\'s nap';
+        $('#bedtime-why').textContent = "Tap Nap started and Nap ended, and you'll get a suggested time for bed.";
+      }
+    }
+
+    // Last night (daytime only)
+    const lk = prevKey(key), ls = summarize(eventsOf(lk));
+    const lc = $('#lastnight-card');
+    lc.hidden = night || !ls.bed;
+    if (!lc.hidden) {
+      const bits = [`Down at ${fmtTime(ls.bed)}`];
+      bits.push(ls.wakes.length ? `woke ${ls.wakes.length} time${ls.wakes.length > 1 ? 's' : ''}, ${fmtDur(ls.awakeMs)} awake` : 'slept through');
+      if (ls.up) bits.push(`up at ${fmtTime(ls.up)}`);
+      $('#lastnight').textContent = bits.join(' · ');
+    }
+
+    // Timeline
+    $('#timeline-label').textContent = night ? 'Today and tonight' : 'Today';
+    const ul = $('#timeline'); ul.textContent = '';
+    if (!evs.length) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'No entries yet.'; ul.append(li); }
+    const ids = [];
+    evs.forEach(e => {
+      const li = document.createElement('li'); li.className = 'ev';
+      const t = document.createElement('input'); t.type = 'time'; t.id = 'tm-' + e.id;
+      const d = new Date(e.at); t.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      t.setAttribute('aria-label', 'Time for ' + LABEL[e.type]);
+      t.disabled = !Log.canWrite;
+      t.addEventListener('change', () => {
+        if (!t.value) return;
+        const [h, m] = t.value.split(':').map(Number);
+        const nd = new Date(e.at); nd.setHours(h, m, 0, 0);
+        let at = nd.getTime();
+        if (at - e.at > 12 * HOUR) at -= 24 * HOUR; else if (e.at - at > 12 * HOUR) at += 24 * HOUR;
+        putEvent(key, e.id, { at });
+      });
+      const what = document.createElement('div'); what.className = 'what';
+      const dot = document.createElement('span'); dot.className = 'dot ' + DOT[e.type];
+      what.append(dot, LABEL[e.type] || e.type);
+      const extra = [];
+      if (e.type === 'nap_end') { const n = s.naps.find(n => n.end === e.at); if (n && n.start) extra.push(`slept ${fmtDur(n.end - n.start)}`); }
+      if (e.type === 'asleep') { const w = s.wakes.find(w => w.back === e.at); if (w) extra.push(`awake ${fmtDur(w.back - w.at)}`); if (e.helped && e.helped.length) extra.push(e.helped.join(', ')); }
+      if (extra.length || (Log.mode === 'db' && e.by)) {
+        const sm = document.createElement('small');
+        sm.textContent = extra.join(' · ');
+        if (Log.mode === 'db' && e.by) { const who = document.createElement('span'); who.dataset.uid = e.by; sm.append(who); ids.push(e.by); }
+        what.append(sm);
+      }
+      const del = btn('Delete', 'del', () => {
+        if (del.classList.contains('confirm')) { putEvent(key, e.id, { deleted: true }); return; }
+        del.classList.add('confirm'); del.textContent = 'Sure?';
+        setTimeout(() => { del.classList.remove('confirm'); del.textContent = 'Delete'; }, 3000);
+      });
+      del.setAttribute('aria-label', 'Delete ' + LABEL[e.type] + ' at ' + fmtTime(e.at));
+      del.hidden = !Log.canWrite;
+      li.append(t, what, del);
+      ul.append(li);
+    });
+    if (ids.length && Log.user) {
+      Log.user.profiles([...new Set(ids)]).then(ps => {
+        $$('#timeline [data-uid]').forEach(sp => {
+          const p = ps[sp.dataset.uid]; if (!p) return;
+          const name = p.isMe ? 'you' : p.name;
+          const before = sp.previousSibling && sp.previousSibling.textContent;
+          sp.textContent = name ? (before ? ' · by ' : 'by ') + name : '';
+        });
+      });
+    }
+
+    // Sync note
+    $('#sync').textContent = Log.mode === 'db' ? (Log.stale ? 'May be out of date' : 'Shared, live') : 'Saved on this phone';
+  }
+  setInterval(() => { if (!$('#p-log').hidden) renderLog(); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renderLog(); });
+
+  async function startLog() {
+    if (!(window.claude && typeof window.claude.use === 'function')) { useLocal(); return; }
+    let db = null;
+    try { db = await window.claude.use('db'); } catch { db = null; }
+    if (!db) { useLocal(); return; }
+    Log.db = db; Log.mode = 'db';
+    watchName();
+    try {
+      const u = await window.claude.use('user');
+      if (u) {
+        Log.user = u;
+        Log.uid = await u.id();
+        const cw = await u.can('data.write');
+        if (cw === false) Log.canWrite = false;
+      }
+    } catch {}
+    let timer = setTimeout(() => { Log.stale = true; renderLog(); }, 10000);
+    db.collection('days').orderBy('key', 'desc').limit(21).onSnapshot(snap => {
+      const days = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) days[v.key || d.id] = v; });
+      Log.days = days;
+      if (!snap.metadata.fromCache) { clearTimeout(timer); Log.stale = false; }
+      renderLog();
+    }, err => {
+      clearTimeout(timer);
+      if (err && (err.code === 'revoked' || err.code === 'not_granted')) { useLocal(); return; }
+      Log.stale = true; renderLog();
+    });
+    $('#now-status').textContent = 'Loading the shared log…';
+  }
+  startLog();
+
+  function logSummaryForClaude() {
+    const key = activeKey();
+    const lines = [];
+    let k = key;
+    for (let i = 0; i < 7; i++) {
+      const evs = eventsOf(k);
+      if (evs.length) {
+        const s = summarize(evs);
+        const parts = [];
+        if (s.naps.length) parts.push(`naps: ${s.naps.map(n => `${n.start ? fmtTime(n.start) : '?'}-${fmtTime(n.end)}`).join(', ')}`);
+        if (s.napOpen) parts.push(`napping since ${fmtTime(s.napOpen)}`);
+        if (s.bed) parts.push(`asleep for the night ${fmtTime(s.bed)}`);
+        if (s.wakes.length) parts.push(`night wakings: ${s.wakes.map(w => `${fmtTime(w.at)}${w.back ? ` for ${fmtDur(w.back - w.at)}` : ' (still awake)'}${w.helped.length ? ` (helped: ${w.helped.join(', ')})` : ''}`).join('; ')}`);
+        if (s.up) parts.push(`up for the day ${fmtTime(s.up)}`);
+        lines.push(`${i === 0 ? 'Today/tonight' : k}: ${parts.join('; ') || 'no complete entries'}`);
+      }
+      k = prevKey(k);
+    }
+    return lines.length ? lines.join('\n') : 'Nothing logged yet.';
+  }
+
+  /* ---------- Baby's name + greeting ---------- */
+  // Kept out of the page source: stored in the shared log inside Claude, or on this phone otherwise
+  let babyName = store.get('hb-name', '');
+  function renderGreeting() {
+    const h = new Date().getHours();
+    const who = babyName || 'your little one';
+    $('#greeting').textContent = h >= 17 && h < 21 ? `Getting ${who} ready for bed` : (h >= 21 || h < 5) ? 'Here for the night shift' : `Bedtime helper for ${babyName || 'a 16-month-old'}`;
+    if (document.activeElement !== $('#baby-name')) $('#baby-name').value = babyName;
+  }
+  async function saveName() {
+    const v = $('#baby-name').value.trim().slice(0, 30);
+    babyName = v; renderGreeting();
+    if (Log.mode === 'db') { try { await Log.db.doc('settings/profile').set({ name: v }); } catch { store.set('hb-name', v); } }
+    else store.set('hb-name', v);
+    $('#save-name').textContent = 'Saved';
+    setTimeout(() => { $('#save-name').textContent = 'Save'; }, 1500);
+  }
+  $('#save-name').addEventListener('click', saveName);
+  $('#baby-name').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); } });
+  function watchName() {
+    if (!Log.db) return;
+    Log.db.doc('settings/profile').onSnapshot(s => {
+      const n = s.exists && s.data() && s.data().name;
+      if (typeof n === 'string') { babyName = n; renderGreeting(); }
+    }, () => {});
+  }
+  renderGreeting();
 
   /* ---------- Ask Claude ---------- */
-  const RULES = `You are helping the parents of a 16-month-old toddler in Perth, Western Australia. The toddler has trouble settling at bedtime and wakes often overnight. The parents are reading your reply on a phone, often in the middle of the night, so:
+  const RULES = `You are helping the parents of {NAME}, a 16-month-old toddler in Perth, Western Australia. She has trouble settling at bedtime, wakes often overnight, and finds it especially hard to go back to sleep after a night waking. The parents are reading your reply on a phone, often in the middle of the night, so:
 - Start with one short, warm sentence that makes them feel less alone.
 - Then give 3 to 5 concrete, gentle, evidence-based things to try, as a short bulleted list. Plain words, no headings, no jargon.
 - Keep the whole reply under 150 words unless they ask for more.
 - Typical needs at this age: about 11 to 14 hours of sleep in 24 hours, many toddlers moving from two naps to one between 12 and 18 months, separation anxiety, and molars coming through.
 - Follow Red Nose Australia safe sleep advice (on the back, in a cot, face and head uncovered, no pillows or bumpers). Never suggest medication doses.
 - Don't diagnose. If they mention fever, breathing pauses, loud snoring most nights, signs of pain, not feeding, or anything that worries them, suggest their GP or child health nurse, healthdirect on 1800 022 222, or the Ngala Parenting Line on (08) 9368 9368.
-Tonight's routine progress: {ROUTINE}`;
+- Use the sleep log below when it's relevant: point out patterns you can actually see in it (nap timing, bedtime, when wakings happen, what helped), and say so if there isn't enough logged yet. Times are local Perth time.
+Tonight's routine progress: {ROUTINE}
+Sleep log, most recent first:
+{LOG}`;
   const turns = [];
   let sample = null, ctl = null;
 
@@ -609,7 +985,7 @@ Tonight's routine progress: {ROUTINE}`;
       const keep = turns.slice(-8);
       if (keep[0].role !== 'user') keep.shift();
       const { text: answer } = await sample(
-        [{ role: 'user', content: RULES.replace('{ROUTINE}', routine) }, ...keep],
+        [{ role: 'user', content: RULES.replace('{NAME}', babyName || 'their daughter').replace('{ROUTINE}', routine).replace('{LOG}', logSummaryForClaude()) }, ...keep],
         { cache: false, signal: ctl.signal, onText: ({ text }) => { reply.innerHTML = md(text); } }
       );
       reply.innerHTML = md(answer);
