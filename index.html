@@ -432,6 +432,7 @@ nav button[aria-selected="true"] { color: var(--ember); }
     </form>
     <div class="row">
       <button class="ghost" id="reset-routine" type="button">Start a new night</button>
+      <span class="sync" id="routine-sync"></span>
     </div>
   </section>
 
@@ -830,31 +831,49 @@ nav button[aria-selected="true"] { color: var(--ember); }
   let night = store.get('hb-night', { date: today(), done: [] });
   if (night.date !== today()) night = { date: today(), done: [] };
 
+  // Inside Claude the routine lives in the shared log (set up by the log code below); otherwise on this phone
+  let routineShared = null;
+  const doneIds = () => routineShared ? routineShared.done() : night.done;
   function saveRoutine() { store.set('hb-steps', steps); store.set('hb-night', night); }
+  function setDone(id, on) {
+    if (routineShared) { routineShared.setDone(id, on); return; }
+    night.done = on ? [...new Set([...night.done, id])] : night.done.filter(x => x !== id);
+    saveRoutine(); renderRoutine();
+  }
+  function setSteps(next) {
+    steps = next;
+    if (routineShared) routineShared.saveSteps(next); else saveRoutine();
+    renderRoutine();
+  }
+  function resetNight() {
+    if (routineShared) { routineShared.reset(); return; }
+    night = { date: today(), done: [] }; saveRoutine(); renderRoutine();
+  }
   function renderRoutine() {
     const ul = $('#steps'); ul.textContent = '';
+    const doneNow = doneIds();
+    const canWrite = routineShared ? routineShared.canWrite() : true;
+    $('#routine-sync').textContent = routineShared ? 'Ticks are shared live between both phones.' : '';
     steps.forEach(st => {
-      const done = night.done.includes(st.id);
+      const done = doneNow.includes(st.id);
       const li = document.createElement('li');
       li.className = 'step' + (done ? ' done' : '');
       const lab = document.createElement('label');
       const cb = document.createElement('input');
-      cb.type = 'checkbox'; cb.checked = done; cb.id = 'cb-' + st.id;
-      cb.addEventListener('change', () => {
-        night.done = cb.checked ? [...new Set([...night.done, st.id])] : night.done.filter(x => x !== st.id);
-        saveRoutine(); renderRoutine();
-      });
+      cb.type = 'checkbox'; cb.checked = done; cb.id = 'cb-' + st.id; cb.disabled = !canWrite;
+      cb.addEventListener('change', () => setDone(st.id, cb.checked));
       const txt = document.createElement('span'); txt.className = 'txt'; txt.textContent = st.text;
       lab.append(cb, txt);
       li.append(lab);
       if (st.mins) { const m = document.createElement('span'); m.className = 'mins'; m.textContent = st.mins + ' min'; li.append(m); }
       const x = document.createElement('button');
       x.className = 'x'; x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + st.text);
-      x.addEventListener('click', () => { steps = steps.filter(s => s.id !== st.id); night.done = night.done.filter(i => i !== st.id); saveRoutine(); renderRoutine(); });
+      x.addEventListener('click', () => setSteps(steps.filter(s => s.id !== st.id)));
+      x.hidden = !canWrite;
       li.append(x);
       ul.append(li);
     });
-    const n = steps.filter(s => night.done.includes(s.id)).length;
+    const n = steps.filter(s => doneNow.includes(s.id)).length;
     $('#routine-count').textContent = `${n} of ${steps.length}`;
     $('#routine-bar').style.width = steps.length ? (n / steps.length * 100) + '%' : '0';
     $('#routine-done').hidden = !(steps.length && n === steps.length);
@@ -863,11 +882,10 @@ nav button[aria-selected="true"] { color: var(--ember); }
     e.preventDefault();
     const v = $('#new-step').value.trim();
     if (!v) return;
-    steps.push({ id: 's' + Date.now(), text: v, mins: 0 });
     $('#new-step').value = '';
-    saveRoutine(); renderRoutine();
+    setSteps([...steps, { id: 's' + Date.now(), text: v, mins: 0 }]);
   });
-  $('#reset-routine').addEventListener('click', () => { night = { date: today(), done: [] }; saveRoutine(); renderRoutine(); });
+  $('#reset-routine').addEventListener('click', resetNight);
   renderRoutine();
 
   /* ---------- Night log + nap timer ---------- */
@@ -919,6 +937,7 @@ nav button[aria-selected="true"] { color: var(--ember); }
   }
   function useLocal() {
     Log.mode = 'local'; Log.db = null;
+    if (routineShared) { routineShared = null; steps = store.get('hb-steps', DEFAULT_STEPS); renderRoutine(); }
     Log.days = store.get('hb-days', {});
     renderLog();
   }
@@ -1176,6 +1195,41 @@ nav button[aria-selected="true"] { color: var(--ember); }
     if (!db) { useLocal(); return; }
     Log.db = db; Log.mode = 'db';
     watchName();
+
+    // Routine: steps in settings/routine, tonight's ticks in that day's log document
+    const routineToday = () => (Log.days[sleepKey(Date.now())] || {}).routine || {};
+    async function putRoutine(patch) {
+      const key = sleepKey(Date.now());
+      const ref = db.collection('days').doc(key);
+      try {
+        await write(key, async () => {
+          try { await ref.update({ routine: patch }); }
+          catch (e) {
+            if (e && e.code === 'invalid_argument' && !Log.days[key]) await ref.set({ key, events: {}, routine: patch });
+            else throw e;
+          }
+        });
+      } catch (e) {
+        if (e && e.code === 'invalid_argument') { Log.canWrite = false; renderLog(); renderRoutine(); }
+        else $('#routine-sync').textContent = "Couldn't save that tick. Check your connection.";
+      }
+    }
+    routineShared = {
+      done: () => { const r = routineToday(); return Object.keys(r).filter(k => r[k] === true); },
+      setDone: (id, on) => putRoutine({ [id]: on }),
+      reset: () => { const patch = {}; Object.keys(routineToday()).forEach(k => patch[k] = false); if (Object.keys(patch).length) putRoutine(patch); },
+      saveSteps: next => db.doc('settings/routine').set({ steps: next }).catch(e => {
+        if (e && e.code === 'invalid_argument') { Log.canWrite = false; renderRoutine(); }
+      }),
+      canWrite: () => Log.canWrite
+    };
+    db.doc('settings/routine').onSnapshot(s => {
+      const v = s.exists && s.data();
+      if (v && Array.isArray(v.steps)) steps = v.steps.map(x => ({ id: String(x.id), text: String(x.text || ''), mins: Number(x.mins) || 0 }));
+      else steps = DEFAULT_STEPS.slice();
+      renderRoutine();
+    }, () => {});
+    renderRoutine();
     try {
       const u = await window.claude.use('user');
       if (u) {
@@ -1191,7 +1245,7 @@ nav button[aria-selected="true"] { color: var(--ember); }
       snap.docs.forEach(d => { const v = d.data(); if (v) days[v.key || d.id] = v; });
       Log.days = days;
       if (!snap.metadata.fromCache) { clearTimeout(timer); Log.stale = false; }
-      renderLog();
+      renderLog(); renderRoutine();
     }, err => {
       clearTimeout(timer);
       if (err && (err.code === 'revoked' || err.code === 'not_granted')) { useLocal(); return; }
@@ -1346,7 +1400,8 @@ Sleep log, most recent first:
     bubble('me', md(text));
     turns.push({ role: 'user', content: text });
     const reply = bubble('claude', '<span class="thinking">Thinking…</span>');
-    const done = steps.filter(s => night.done.includes(s.id)).map(s => s.text);
+    const ids = doneIds();
+    const done = steps.filter(s => ids.includes(s.id)).map(s => s.text);
     const routine = done.length ? `done so far: ${done.join('; ')}` : 'not started yet';
     ctl = new AbortController();
     try {

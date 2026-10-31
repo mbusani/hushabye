@@ -12,7 +12,7 @@ A calm bedtime and night-waking helper for a 16-month-old who finds it hard to s
 - **Themes**: Sleepy Owl (aubergine and amber), Whale Song (sea blue and teal), Honey Bear (sage and honey) and Fairy Floss (dusky rose), each in light and dark. Choose Match phone, Light, Dark, or Bedtime (dark from 6 pm to 7 am).
 - **Sleep sounds**: white, pink, brown noise and a slow "ocean" swell, generated on the phone (no downloads). Volume control and a fade-out timer (30 min, 1 hr, 2 hrs or all night). Keeps the screen awake while playing.
 - **Night light**: a full-screen dim red glow for feeds and resettling, with a brightness slider. Double-tap to turn off.
-- **Bedtime routine**: a checklist of the same steps every night (editable), with progress that resets each day.
+- **Bedtime routine**: a checklist of the same steps every night (editable), with progress that resets each day. Inside Claude, steps and ticks are shared live between both parents.
 - **Ask Claude**: describe what's happening and get short, gentle, practical ideas tailored to a 16-month-old, plus WA helplines (Ngala, healthdirect). Reads the log to spot patterns. Uses the viewer's own Claude account and only works when the app is opened inside Claude.
 
 ## How to use (for parents)
