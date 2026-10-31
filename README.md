@@ -5,6 +5,8 @@ A calm bedtime and night-waking helper for a 16-month-old who finds it hard to s
 ## Features
 
 - **Night log** (Stage 2): one tap for "Woke up" and "Back asleep", with what helped (feed, cuddle, dummy and so on). Inside Claude, both parents share the same log live; elsewhere it's saved on that phone.
+- **Settling coach**: when she wakes at night, step-by-step guidance that moves on the longer she's awake, with one-tap red light and sound.
+- **Recommendations**: suggestions based on the last few nights in the log (feeds, late bedtimes, long wakings, late naps, early mornings), plus a sleep guide for 16 months.
 - **Nap timer and bedtime window**: log naps and get a suggested bedtime based on how long she's been awake, plus a summary of last night.
 
 - **Sleep sounds**: white, pink, brown noise and a slow "ocean" swell, generated on the phone (no downloads). Volume control and a fade-out timer (30 min, 1 hr, 2 hrs or all night). Keeps the screen awake while playing.
@@ -23,7 +25,6 @@ Outside Claude, the log, settings and routine are saved in the browser on that p
 
 ## Roadmap
 
-- **2am settling coach.** Step-by-step help for getting back to sleep after a night waking.
 - **Stage 3: Patterns.** Weekly view of bedtime, wakings and naps, with a summary to show a child health nurse.
 
 ## Safety

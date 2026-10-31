@@ -176,6 +176,25 @@ input[type=range] { width: 100%; accent-color: var(--ember); }
 .del.confirm { color: var(--ember); font-weight: 600; }
 .sync { color: var(--haze); font-size: .8125rem; }
 .empty { color: var(--haze); font-size: .9rem; padding: 6px 0; }
+.coach { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--dusk-2); padding-top: 14px; }
+.coach ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.coach li { color: var(--haze); }
+.coach li strong { color: var(--moon); font-weight: 600; }
+.coach li.now { color: var(--moon); }
+.coach li.now::marker { color: var(--ember); }
+.coach .row button { flex: 1; }
+.recs { display: flex; flex-direction: column; gap: 12px; }
+.rec { display: flex; flex-direction: column; gap: 2px; }
+.rec strong { font-weight: 600; }
+.rec p { color: var(--haze); font-size: .9rem; max-width: 60ch; }
+.guide { display: flex; flex-direction: column; }
+.guide details { border-bottom: 1px solid var(--dusk); }
+.guide summary { cursor: pointer; padding: 14px 0; font-weight: 500; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.guide summary::-webkit-details-marker { display: none; }
+.guide summary::after { content: "+"; color: var(--haze); font-size: 1.2rem; line-height: 1; }
+.guide details[open] summary::after { content: "–"; }
+.guide ul { margin: 0 0 14px; padding-left: 20px; color: var(--haze); display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
+.guide li strong { color: var(--moon); font-weight: 600; }
 
 /* Tab bar */
 nav {
@@ -220,6 +239,25 @@ nav button[aria-selected="true"] { color: var(--ember); }
         <div class="chips" id="helped-chips"></div>
       </div>
       <div class="actions" id="actions"></div>
+      <div class="coach" id="coach" hidden>
+        <span class="label">Settling coach</span>
+        <ol id="coach-steps">
+          <li data-from="0"><strong>Pause and listen for a minute or two.</strong> Some grizzles fade by themselves.</li>
+          <li data-from="2"><strong>Go in calmly.</strong> Keep the lights off or use the red light. Low, slow, boring voice and the same short phrase each time, like "Sleepy time, Mum's here."</li>
+          <li data-from="5"><strong>Check the basics.</strong> Nappy, too hot or cold, a sip of water, sore gums.</li>
+          <li data-from="8"><strong>Settle her in the cot first.</strong> Hand on her tummy, gentle shush or pat, sound playing. Stay close.</li>
+          <li data-from="15"><strong>If she's very upset, pick her up</strong> and cuddle until she's calm, not asleep. Then back in the cot, drowsy.</li>
+          <li data-from="30"><strong>Still awake after 30 to 45 minutes?</strong> Swap with the other parent if you can, and keep it dark and quiet. Some nights are just long. It isn't a failure.</li>
+        </ol>
+        <div class="row">
+          <button class="second" type="button" id="coach-light">Red light</button>
+          <button class="second" type="button" id="coach-sound">Play sound</button>
+        </div>
+      </div>
+    </div>
+    <div class="card recs" id="recs" hidden>
+      <span class="label" id="recs-label">Recommendations</span>
+      <div class="recs" id="recs-list"></div>
     </div>
     <div class="card" id="bedtime-card" hidden>
       <span class="label">Bedtime window</span>
@@ -236,6 +274,52 @@ nav button[aria-selected="true"] { color: var(--ember); }
     </div>
     <ul class="timeline" id="timeline"></ul>
     <p class="hint">Logged something late? Tap its time to change it.</p>
+
+    <div class="guide">
+      <h2 style="margin-bottom: 4px">Sleep guide for 16 months</h2>
+      <details>
+        <summary>How much sleep is normal</summary>
+        <ul>
+          <li><strong>11 to 14 hours in 24</strong>, counting naps. Most toddlers this age sleep about 10 to 12 hours at night.</li>
+          <li><strong>One or two naps.</strong> Many move from two naps to one between 12 and 18 months. The changeover often upsets nights for a few weeks.</li>
+          <li><strong>Waking once or twice a night is still common</strong> at this age. It's how quickly she gets back to sleep that matters most.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Settling at bedtime</summary>
+        <ul>
+          <li><strong>Same routine, same order, every night</strong>, about 30 to 45 minutes, ending in her room.</li>
+          <li><strong>Watch the timing.</strong> Too long awake since her nap and she gets wired; too short and she isn't tired. Use the bedtime window above.</li>
+          <li><strong>Into the cot drowsy but awake</strong> when you can. Falling asleep in the cot helps her resettle there at 2am.</li>
+          <li><strong>Dim lights and screens off</strong> for the last half hour. A comforter like a soft toy can help from 12 months.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>When she won't go back down at night</summary>
+        <ul>
+          <li><strong>Keep nights dark and boring.</strong> No lights, play or chatting, so night wakings aren't interesting.</li>
+          <li><strong>Notice what she needs to fall asleep.</strong> If she's always fed, rocked or held to sleep at bedtime, she'll often need the same at every waking. The log's "what helped" shows this.</li>
+          <li><strong>Change one thing slowly.</strong> For example, shorten a feed a little each night, or settle in the cot with a hand on her before picking up.</li>
+          <li><strong>Both parents use the same plan</strong> for a week or two before deciding if it's working.</li>
+          <li><strong>Check the room.</strong> Dark, quiet and not too warm, with light, comfortable sleepwear.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Safe sleep</summary>
+        <ul>
+          <li>Follow <a href="https://rednose.org.au" target="_blank" rel="noopener" style="color: var(--ember)">Red Nose Australia</a>: on her back to start, in her own cot, face and head uncovered.</li>
+          <li>No pillows, bumpers or loose bedding. Keep cords, blinds and heaters away from the cot.</li>
+          <li>A safe toddler sleeping bag is a good option at this age.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>When to get help</summary>
+        <ul>
+          <li><strong>See your GP or child health nurse</strong> if she snores loudly most nights, pauses in her breathing, seems unwell or in pain, or if sleep problems carry on for weeks.</li>
+          <li><strong>Get support for yourselves too.</strong> Ongoing broken sleep is hard. Ngala (WA) runs sleep programs and a parenting line: <span class="num" style="user-select: all">(08) 9368 9368</span>.</li>
+        </ul>
+      </details>
+    </div>
   </section>
 
   <!-- Sounds -->
@@ -357,6 +441,7 @@ nav button[aria-selected="true"] { color: var(--ember); }
     get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
   };
+  let babyName = store.get('hb-name', '');
 
   /* ---------- Tabs ---------- */
   const tabs = $$('nav [role=tab]');
@@ -745,6 +830,32 @@ nav button[aria-selected="true"] { color: var(--ember); }
       act.append(btn('Asleep for the night', 'second', () => logEvent('bed')));
     }
 
+    // Settling coach: shows during a night waking, highlights the step that fits how long she's been awake
+    $('#coach').hidden = !waking;
+    if (waking) {
+      const mins = (now - last.at) / MIN;
+      const items = $$('#coach-steps li');
+      let cur = 0;
+      items.forEach((li, i) => { if (mins >= Number(li.dataset.from)) cur = i; });
+      items.forEach((li, i) => li.classList.toggle('now', i === cur || i === cur + 1));
+      $('#coach-sound').textContent = playing ? 'Sound playing' : 'Play sound';
+      $('#coach-sound').disabled = playing;
+    }
+
+    // Recommendations from her own log (daytime only)
+    const rc = $('#recs');
+    rc.hidden = night;
+    if (!night) {
+      $('#recs-label').textContent = 'Recommendations' + (babyName ? ' for ' + babyName : '');
+      const list = $('#recs-list'); list.textContent = '';
+      recommendations(key, s).forEach(r => {
+        const d = document.createElement('div'); d.className = 'rec';
+        const t = document.createElement('strong'); t.textContent = r.t;
+        const p = document.createElement('p'); p.textContent = r.d;
+        d.append(t, p); list.append(d);
+      });
+    }
+
     // Bedtime window (daytime only)
     const bc = $('#bedtime-card');
     bc.hidden = night || !!s.bed;
@@ -838,6 +949,46 @@ nav button[aria-selected="true"] { color: var(--ember); }
     // Sync note
     $('#sync').textContent = Log.mode === 'db' ? (Log.stale ? 'May be out of date' : 'Shared, live') : 'Saved on this phone';
   }
+  function recommendations(key, today) {
+    const nights = [];
+    let k = prevKey(key);
+    for (let i = 0; i < 7; i++) { const s = summarize(eventsOf(k)); if (s.bed) nights.push(s); k = prevKey(k); }
+    const she = babyName || 'she';
+    const She = babyName || 'She';
+    if (!nights.length) return [{ t: 'Log a few nights first', d: `After two or three nights of "Woke up" and "Back asleep", you'll see suggestions here based on ${babyName ? babyName + "'s" : 'her'} own pattern. Until then, the sleep guide below covers the basics.` }];
+    const recent = nights.slice(0, 3);
+    const wakes = recent.flatMap(n => n.wakes);
+    const avgWakes = wakes.length / recent.length;
+    const avgAwake = recent.reduce((t, n) => t + n.awakeMs, 0) / recent.length / MIN;
+    const tally = {}; wakes.forEach(w => w.helped.forEach(h => tally[h] = (tally[h] || 0) + 1));
+    const share = h => wakes.length ? (tally[h] || 0) / wakes.length : 0;
+    const minsAfter6 = t => { const d = new Date(t); let m = d.getHours() * 60 + d.getMinutes(); if (m < 12 * 60) m += 24 * 60; return m - 18 * 60; };
+    const avgBed = recent.reduce((t, n) => t + minsAfter6(n.bed), 0) / recent.length;
+    const napTotals = recent.map(n => n.naps.reduce((t, x) => t + (x.start ? x.end - x.start : 0), 0) / MIN).filter(x => x > 0);
+    const avgNap = napTotals.length ? napTotals.reduce((a, b) => a + b, 0) / napTotals.length : 0;
+    const lateNap = [today, ...recent].some(n => n.naps.some(x => new Date(x.end).getHours() >= 16));
+    const earlyUp = recent.filter(n => n.up && new Date(n.up).getHours() < 5 || (n.up && new Date(n.up).getHours() === 5 && new Date(n.up).getMinutes() < 30)).length;
+    const recs = [];
+
+    if (wakes.length >= 3 && share('Feed') >= 0.5) recs.push({ t: 'Feeds are settling most wakings', d: `At 16 months most toddlers don't need milk overnight for hunger, so ${she} may be waking for the feed itself. If you want fewer wakings, try shortening night feeds a little each night, or have the other parent go in with a cuddle and water. Check with your child health nurse first if you're unsure.` });
+    else if (wakes.length >= 3 && share('Rocking') + share('Cuddle') >= 0.6) recs.push({ t: `${She} mostly needs to be held back to sleep`, d: `That's normal, and it's often how ${she} falls asleep at bedtime too. Try settling in the cot first at bedtime and at night: hand on ${babyName ? 'her' : 'her'} tummy, shush or pat, pick up only if very upset. Change it gradually over a week or two.` });
+    if (avgAwake >= 40) {
+      if (avgNap > 150) recs.push({ t: 'Long night wakings, lots of day sleep', d: `${She}'s been awake about ${Math.round(avgAwake)} minutes a night and napping about ${fmtDur(avgNap * MIN)} a day. Try capping the nap at around 2 hours so ${she}'s more tired at night.` });
+      else recs.push({ t: 'Long wakings: keep them dark and boring', d: `${She}'s been awake about ${Math.round(avgAwake)} minutes a night on average. Lights off or red light, no chatting or play, same calm phrase. The settling coach shows up when you tap "Woke up".` });
+    }
+    if (avgBed > 135) recs.push({ t: 'Bedtime is running late', d: `Bed has averaged after 8:15 pm. Overtired toddlers often wake more. Try bringing bedtime 15 minutes earlier every few nights, aiming for 7 to 7:30 pm.` });
+    if (lateNap) recs.push({ t: 'Late naps can push bedtime back', d: 'A nap that ends after 4 pm makes it hard to be tired enough at 7. Try starting the nap earlier, or waking her by about 3:30 pm.' });
+    if (earlyUp >= 2) recs.push({ t: 'Early mornings', d: 'Before 6 am, treat waking like night time: dark room, keep it quiet, settle if you can. Very early starts can also come from a bedtime that is too late, not too early.' });
+    if (avgWakes >= 3 && recs.length < 3) recs.push({ t: 'Pick one plan for wakings', d: `${She}'s waking about ${Math.round(avgWakes)} times a night. Agree on one approach together, such as the coach steps, and both use it for a week or two. Consistency matters more than which method you choose.` });
+    if (!recs.length) recs.push({ t: 'Nights are looking steadier', d: 'Keep the routine and timing the same. Small, consistent habits are doing their job.' });
+    return recs.slice(0, 3);
+  }
+  $('#coach-light').addEventListener('click', async () => {
+    $('#overlay').hidden = false; keepAwake(true);
+    try { await document.documentElement.requestFullscreen?.(); } catch {}
+  });
+  $('#coach-sound').addEventListener('click', () => { if (!playing) { startSound(); renderLog(); } });
+
   setInterval(() => { if (!$('#p-log').hidden) renderLog(); }, 30000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renderLog(); });
 
@@ -896,7 +1047,6 @@ nav button[aria-selected="true"] { color: var(--ember); }
 
   /* ---------- Baby's name + greeting ---------- */
   // Kept out of the page source: stored in the shared log inside Claude, or on this phone otherwise
-  let babyName = store.get('hb-name', '');
   function renderGreeting() {
     const h = new Date().getHours();
     const who = babyName || 'your little one';
